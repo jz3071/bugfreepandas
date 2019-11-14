@@ -1,0 +1,31 @@
+echo "*************************************************\nGET Request"
+curl -X GET http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com/api/user/12313@dd.com
+
+echo "\n\n*************************************************\nInsert Request"
+curl -H 'Content-Type:application/json' -X POST --data '{
+        "last_name": "YYYUUUKassjhaij",
+        "first_name": "QDCASKCP",
+        "password": "CCCCColumbia",
+        "id":"CCCCCCcolumbiaUniversity",
+        "email":"ddadaddddd@dadadadad.com"
+    }' http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com/api/register
+
+echo "\n\n*************************************************\nUpdate Request"
+echo ">>>>>>>>>>>>>>>>>>>Show User>>>>>>>>>>>>>>>>>>>"
+curl -X GET http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com/api/user/ddadaddddd@dadadadad.com
+echo "\n>>>>>>>>>>>>>>>>>>>Update User>>>>>>>>>>>>>>>>>>>"
+curl -H 'Content-Type:application/json' -X PUT --data '{
+        "last_name": "Tadsayy",
+        "first_name": "Rdaaadhdd",
+        "password": "columbiaNYU",
+        "id":"NewYorkUniversity"
+    }' http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com/api/user/ddadaddddd@dadadadad.com
+echo "\n>>>>>>>>>>>>>>>>>>>Show User>>>>>>>>>>>>>>>>>>>"
+curl -X GET http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com/api/user/ddadaddddd@dadadadad.com
+
+echo "\n\n*************************************************\nDelete Request"
+echo ">>>>>>>>>>>>>>>>>>>Delete User>>>>>>>>>>>>>>>>>>>"
+curl -X Delete http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com/api/user/ddadaddddd@dadadadad.com
+
+echo "\n\n>>>>>>>>>>>>>>>>>>>Show User>>>>>>>>>>>>>>>>>>>"
+curl -X GET http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com/api/user/ddadaddddd@dadadadad.com
