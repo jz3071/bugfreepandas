@@ -22,9 +22,26 @@ class Context():
     @classmethod
     def get_default_context(cls):
 
-        db_connect_info = os.environ['db_connect_info']
-        db_connect_info = json.loads(db_connect_info)
+        # db_connect_info = os.environ['db']
+        # db_connect_info = json.loads(db_connect_info)
+        # db_connect_info = {
+        #     'host': 'localhost',
+        #     'port': 3306,
+        #     'user': 'yunjie',
+        #     'password': 'Cc08234494',
+        #     'db': 'se',
+        #     'charset': 'utf8'
+        # }
 
+        db_connect_info = {
+            'host': 'sedatabase.ccrfnreg6ro1.us-east-1.rds.amazonaws.com',
+            'user': 'yangli',
+            'password': 'columbialiyang',
+            'port': 3306,
+            'db': 'e6156',
+            'charset': 'utf8'
+        }
+        
         ctx = { "db_connect_info": db_connect_info }
 
         result = Context(ctx)

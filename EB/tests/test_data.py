@@ -9,16 +9,17 @@ def t1():
     print("Result = \n", json.dumps(r, indent=2))
 
 def t2():
-     usr = {
-         "last_name": "Baggins",
+    print('hello')
+    usr = {
+         "last_name": "Bagginss",
          "first_name": "Frodo",
          "id": str(uuid4()),
-         "email": "fb@shire.gov",
+         "email": "fb@qq.com",
          "status": "PENDING",
          "password": "goodidea"
      }
-     res = UsersRDB.create_user(user_info=usr)
-     print("Res = ", res)
+    res = UsersRDB.create_user(user_info=usr)
+    print("Res = ", res)
 
-#t1()
-t2()
+t1()
+#t2()

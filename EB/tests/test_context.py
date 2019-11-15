@@ -1,4 +1,4 @@
-from Projects.EB.Context.Context import Context
+from EB.Context.Context import Context
 import json
 
 def t1():

@@ -31,7 +31,6 @@ class UsersRDB(BaseDataObject):
 
     @classmethod
     def get_by_email(cls, email):
-
         sql = "select * from e6156.users where email=%s"
         res, data = data_adaptor.run_q(sql=sql, args=(email), fetch=True)
         if data is not None and len(data) > 0:
@@ -47,7 +46,7 @@ class UsersRDB(BaseDataObject):
         result = None
 
         try:
-            sql, args = data_adaptor.create_insert(table_name="users", row=user_info)
+            sql, args = data_adaptor.create_insert(table_name="e6156.users", row=user_info)
             res, data = data_adaptor.run_q(sql, args)
             if res != 1:
                 result = None
@@ -63,8 +62,42 @@ class UsersRDB(BaseDataObject):
 
         return result
 
+    @classmethod
+    def update_user(cls, user_info, template):
+        result = None
+        try:
+            sql, args = data_adaptor.create_update(table_name="e6156.users", new_values = user_info, template = template)
+            res, data = data_adaptor.run_q(sql, args)
+            if res != 1:
+                result = None
+            else:
+                result = user_info
+        except pymysql.err.IntegrityError as ie:
+            if ie.args[0] == 1062:
+                raise (DataException(DataException.duplicate_key))
+            else:
+                raise DataException()
+        except Exception as e:
+            raise DataException()
+        return result
 
-
-
+    @classmethod
+    def delete_user(cls, template):
+        result = None
+        try:
+            sql, args = data_adaptor.create_delete(table_name="e6156.users", template=template)
+            res, data = data_adaptor.run_q(sql, args)
+            if res != 1:
+                result = None
+            else:
+                result = template
+        except pymysql.err.IntegrityError as ie:
+            if ie.args[0] == 1062:
+                raise (DataException(DataException.duplicate_key))
+            else:
+                raise DataException()
+        except Exception as e:
+            raise DataException()
+        return result
 
 

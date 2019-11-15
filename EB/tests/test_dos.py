@@ -6,17 +6,19 @@ threadlocal = threading.local()
 
 # TODO: We should read this information from the environment.
 default_connect_info =  {
-    "host" :'localhost',
-    "user": 'dbuser',
-    "password": 'dbuserdbuser',
-    "db": "lahman2019raw",
-    "charset": 'utf8mb4'
+    'host': 'localhost',
+    'port': 3306,
+    'user': 'yunjie',
+    'password': 'Cc08234494',
+    'db': 'se',
+    'charset': 'utf8'
 }
 
 
 def t1():
 
     current_thread().default_connect_info  = default_connect_info
-    data_adaptor.get_connection()
+    # print(default_connect_info)
+    data_adaptor.get_connection(default_connect_info)
 
 t1()

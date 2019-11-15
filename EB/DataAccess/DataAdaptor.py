@@ -15,12 +15,32 @@ def _get_default_connection():
         ctx = Context.get_default_context()
         c_info = ctx.get_context("db_connect_info")
 
+        # local test
+        # basedata = {
+        #     'host': 'localhost',
+        #     'port': 3306,
+        #     'user': 'yunjie',
+        #     'password': 'Cc08234494',
+        #     'db': 'se',
+        #     'charset': 'utf8'
+        # }
+
+        basedata = {
+            'host': 'sedatabase.ccrfnreg6ro1.us-east-1.rds.amazonaws.com',
+            'user': 'yangli',
+            'password': 'columbialiyang',
+            'port': 3306,
+            'db': 'e6156'
+        }
+
+        c_info = basedata
+
         _default_connection = pymysql.connect(
             host=c_info['host'],
             user=c_info['user'],
             password=c_info['password'],
             port=c_info['port'],
-            db='e6156',
+            db=c_info['db'],
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor
         )
@@ -187,8 +207,8 @@ def create_insert(table_name, row):
 def create_update(table_name, new_values, template):
     """
 
-    :param new_values: A dictionary containing cols and the new values.
-    :param template: A template to form the where clause.
+    :param new_values: A dictionary containing cols and the new values.{status: ACTIVE}
+    :param template: A template to form the where clause. where the update happens {email: xxx}
     :return: An update statement template and args.
     """
     set_terms = []
@@ -209,5 +229,14 @@ def create_update(table_name, new_values, template):
 
     return sql, args
 
+
+def create_delete(table_name, template):
+    set_terms = []
+    args = []
+    w_clause, w_args = template_to_where_clause(template)
+    args.extend(w_args)
+
+    sql = "delete from " + table_name + " " + w_clause
+    return sql, args
 
 
