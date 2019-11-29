@@ -4,19 +4,21 @@
 # - Response enables creating well-formed HTTP/REST responses.
 # - requests enables accessing the elements of an incoming HTTP/REST request.
 #
-from flask import Flask, Response, request, jsonify
-
+from flask import Flask, Response, request, jsonify, session, render_template, url_for
+import traceback
 from datetime import datetime
 import json
 
 from CustomerInfo.Users import UsersService as UserService
 from Context.Context import Context
 from CustomerInfo.SNS_topic import SNS
+from CustomerInfo.Address import AddressService
 
 # Setup and use the simple, common Python logging framework. Send log messages to the console.
 # The application should get the log level out of the context. We will change later.
 #
 import logging
+import os
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -43,7 +45,8 @@ footer_text = '</body>\n</html>'
 
 # EB looks for an 'application' callable by default.
 # This is the top-level application that receives and routes requests.
-application = Flask(__name__)
+tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Templates')
+application = Flask(__name__, template_folder=tmpl_dir)
 
 # add a rule for the index page. (Put here by AWS in the sample)
 application.add_url_rule('/', 'index', (lambda: header_text +
@@ -60,6 +63,7 @@ application.add_url_rule('/<username>', 'hello', (lambda username:
 _default_context = None
 _user_service = None
 _sns_topic = None
+_address_service = None
 
 
 def _get_default_context():
@@ -86,6 +90,16 @@ def _get_sns_topic():
         _sns_topic = SNS()
         _sns_topic.set_up()
     return _sns_topic
+
+
+def _get_address_service():
+    global _address_service
+
+    if _address_service is None:
+        _address_service = AddressService()
+
+    return _address_service
+
 
 def init():
 
@@ -244,11 +258,6 @@ def user_register():
     return full_rsp
 
 
-# @application.route("/api/user/verify/<token>", methods=["GET", "PUT", "DELETE"])
-# def verify_user(token):
-
-
-
 @application.route("/api/user/<email>", methods=["GET", "PUT", "DELETE"])
 def user_email(email):
 
@@ -315,6 +324,77 @@ def user_email(email):
 
     return full_rsp
 
+
+
+@application.route("/address/<addr_id>", methods=["GET"])
+def get_address(addr_id):
+    """
+    "GET": given addr_id, get detailed address information
+    :return:
+    """
+    try:
+        global _address_service
+        _address_service = _get_address_service()
+        rsp_data = None
+        rsp_status = None
+        rsp_txt = None
+        if request.method == "GET":
+            rsp_data = _address_service.get_address(addr_id)
+            rsp_status = 500
+            if rsp_data is not None:
+                rsp_status = 200
+            full_rsp = Response(json.dumps(rsp_data), status=rsp_status, content_type="application/json")
+        else:
+            rsp_status = 500
+            rsp_txt = "Wrong HTTP request when getting address"
+            full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
+    except Exception:
+        rsp_status = 500
+        rsp_txt = "INTERNAL SERVER ERROR when processing address"
+        full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
+    return full_rsp
+
+
+@application.route("/address", methods=["POST", "PUT"])
+def process_address():
+    """
+        "POST": create a new address entry
+        "PUT": update an address entry
+        :return:
+        """
+    try:
+        global _address_service
+        _address_service = _get_address_service()
+        rsp_data = None
+        rsp_status = None
+        rsp_txt = None
+        if request.method == "POST":
+            inputs = log_and_extract_input(process_address)
+            new_addr = inputs["body"]
+            rsp_data = _address_service.create_address(new_addr)
+            rsp_status = 500
+            if rsp_data is not None:
+                rsp_status = 200
+            full_rsp = Response(rsp_data, status=rsp_status, content_type="text/plain")
+        elif request.method == "PUT":
+            inputs = log_and_extract_input(process_address)
+            addr_info = inputs["body"]
+            previous_addr_id = addr_info["addr_id"]
+            del addr_info["addr_id"]
+            rsp_data = _address_service.update_address(previous_addr_id, addr_info)
+            rsp_status = 500
+            if rsp_data is not None:
+                rsp_status = 200
+            full_rsp = Response(rsp_data, status=rsp_status, content_type="text/plain")
+        else:
+            rsp_status = 500
+            rsp_txt = "Wrong HTTP request when processing address"
+            full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
+    except Exception:
+        rsp_status = 500
+        rsp_txt = "INTERNAL SERVER ERROR when processing address"
+        full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
+    return full_rsp
 
 logger.debug("__name__ = " + str(__name__))
 # run the app.
