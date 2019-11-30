@@ -15,8 +15,8 @@ class SNS():
     def create_client(self):
         client = boto3.client(
             "sns",
-            aws_access_key_id="AKIAJ2KUDXFALXYVJ4BQ",
-            aws_secret_access_key="eF/a2vZ9Fk1/FKCmCl0FX9U1/CzMFAIluvPo1bDO",
+            aws_access_key_id="your id",
+            aws_secret_access_key="your access key",
             region_name="us-east-2"
         )
         self.client = client
