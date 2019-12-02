@@ -4,21 +4,18 @@
 # - Response enables creating well-formed HTTP/REST responses.
 # - requests enables accessing the elements of an incoming HTTP/REST request.
 #
-from flask import Flask, Response, request, jsonify, session, render_template, url_for
-import traceback
+from flask import Flask, Response, request
+
 from datetime import datetime
 import json
-
+from Services.CustomerProfile.Profile import ProfileService as ProfileService
 from CustomerInfo.Users import UsersService as UserService
 from Context.Context import Context
-from CustomerInfo.SNS_topic import SNS
-from CustomerInfo.Address import AddressService
 
 # Setup and use the simple, common Python logging framework. Send log messages to the console.
 # The application should get the log level out of the context. We will change later.
 #
 import logging
-import os
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -45,12 +42,11 @@ footer_text = '</body>\n</html>'
 
 # EB looks for an 'application' callable by default.
 # This is the top-level application that receives and routes requests.
-tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Templates')
-application = Flask(__name__, template_folder=tmpl_dir)
+application = Flask(__name__)
 
 # add a rule for the index page. (Put here by AWS in the sample)
 application.add_url_rule('/', 'index', (lambda: header_text +
-    say_hello('yunjie') + instructions + footer_text))
+    say_hello() + instructions + footer_text))
 
 # add a rule when the page is accessed with a name appended to the site
 # URL. Put here by AWS in the sample
@@ -62,9 +58,7 @@ application.add_url_rule('/<username>', 'hello', (lambda username:
 
 _default_context = None
 _user_service = None
-_sns_topic = None
-_address_service = None
-
+_profile_service = None
 
 def _get_default_context():
 
@@ -84,22 +78,23 @@ def _get_user_service():
 
     return _user_service
 
-def _get_sns_topic():
-    global _sns_topic
-    if _sns_topic is None:
-        _sns_topic = SNS()
-        _sns_topic.set_up()
-    return _sns_topic
+def _get_profile_service():
+    global _profile_service
 
+    if _profile_service is None:
+        _profile_service = ProfileService(_get_default_context())
 
-def _get_address_service():
-    global _address_service
+    return _profile_service
 
-    if _address_service is None:
-        _address_service = AddressService()
+def linked_data_assembler(uid):
+    href_string = "/api/profile/" + str(uid)
+    profile_link_frame = {
+        "rel" : "profile",
+        "href" : href_string,
+        "method" : "GET"
+    }
 
-    return _address_service
-
+    return profile_link_frame
 
 def init():
 
@@ -174,7 +169,7 @@ def health_check():
 def demo(parameter):
 
     inputs = log_and_extract_input(demo, { "parameter": parameter })
-    #logger.debug(inputs['method'])
+
     msg = {
         "/demo received the following inputs" : inputs
     }
@@ -182,99 +177,27 @@ def demo(parameter):
     rsp = Response(json.dumps(msg), status=200, content_type="application/json")
     return rsp
 
-@application.route("/api/login", methods=["POST", "PUT"])
-def user_login_register():
-
-    full_rsp = Response('hello', status=200, content_type="text/plain")
-    return full_rsp
-
-@application.route("/api/register", methods=["POST", "PUT"])
-def user_register():
-    if request.method == "POST":
-        # initial post
-        # curl -i -X POST -H "Content-Type: application/json" -d "{\"last_name\": \"yunjie\", \"first_name\":\"cao\", \"email\":\"yc3702@columbia.edu\", \"password\":\"123456\",\"id\":\"hhhh\"}" http://127.0.0.1:5000/api/register
-        inputs = log_and_extract_input(user_register)
-        new_user = inputs["body"]
-        rsp_data = None
-        rsp_status = None
-        rsp_txt = None
-        global _user_service
-        global _sns_topic
-        try:
-            user_service = _get_user_service()
-            _sns_topic = _get_sns_topic()
-            rsp = user_service.create_user(new_user, sns=_sns_topic)
-            if rsp is not None:
-                rsp_data = rsp
-                rsp_status = 200
-                rsp_txt = "OK"
-            else:
-                rsp_data = None
-                rsp_status = 404
-                rsp_txt = "Failed"
-            if rsp_data is not None:
-                full_rsp = Response(json.dumps(rsp_data), status=rsp_status, content_type="application/json")
-            else:
-                full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
-
-        except Exception as e:
-            logger.error('Something wrong in registration ' + str(e))
-            rsp_status = 500
-            rsp_txt = "INTERNAL SERVER ERROR when register user."
-            full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
-
-    elif request.method == "PUT":
-        # verify users
-        inputs = log_and_extract_input(user_register)
-        verify_user = inputs["body"]
-        rsp_data = None
-        rsp_status = None
-        rsp_txt = None
-        global _user_service
-        try:
-            user_service = _get_user_service()
-            update_info = {'status': 'ACTIVE'}
-            template = {'email': verify_user.get('email', None)}
-            rsp = user_service.update_user(update_info, template)
-            if rsp is not None:
-                rsp_data = rsp
-                rsp_status = 200
-                rsp_txt = "Ok to verify user"
-            else:
-                rsp_data = None
-                rsp_status = 404
-                rsp_txt = "Failed"
-            if rsp_data is not None:
-                full_rsp = Response(json.dumps(rsp_data), status=rsp_status, content_type="application/json")
-            else:
-                full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
-
-        except Exception as e:
-            logger.error('Something wrong in registration ' + str(e))
-            rsp_status = 500
-            rsp_txt = "INTERNAL SERVER ERROR when verify user."
-            full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
-
-    return full_rsp
-
 
 @application.route("/api/user/<email>", methods=["GET", "PUT", "DELETE"])
 def user_email(email):
 
     global _user_service
 
-    inputs = \
-        (demo, { "parameters": email })
+    inputs = log_and_extract_input(demo, { "parameters": email })
     rsp_data = None
     rsp_status = None
     rsp_txt = None
-    logger.debug(inputs)
+
     try:
+
         user_service = _get_user_service()
+
         logger.error("/email: _user_service = " + str(user_service))
 
-        if request.method == "GET":
+        if inputs["method"] == "GET":
+
             rsp = user_service.get_by_email(email)
+
             if rsp is not None:
                 rsp_data = rsp
                 rsp_status = 200
@@ -283,30 +206,19 @@ def user_email(email):
                 rsp_data = None
                 rsp_status = 404
                 rsp_txt = "NOT FOUND"
-        elif request.method == 'PUT':
-            inputs = log_and_extract_input(user_email)
-            update_info = inputs["body"]
+
+            if "links" not in rsp:
+                rsp["links"] = []
+
+            link_to_profile = linked_data_assembler(rsp["id"])
+
+            rsp["links"].append(link_to_profile)
+
+
+        else:
             rsp_data = None
-            rsp_status = 200
-            rsp_txt = "OK"
-            rsp = user_service.update_user(update_info, {"email":email})
-            if rsp is None:
-                rsp_data = None
-                rsp_status = 400
-                rsp_txt = "Update failed"
-            else:
-                rsp_data = rsp
-        elif request.method == "DELETE":
-            rsp_data = None
-            rsp_status = 200
-            rsp_txt = "OK"
-            rsp = user_service.delete_user({"email": email})
-            if rsp is None:
-                rsp_data = None
-                rsp_status = 400
-                rsp_txt = "Delete failed"
-            else:
-                rsp_data = rsp
+            rsp_status = 501
+            rsp_txt = "NOT IMPLEMENTED"
 
         if rsp_data is not None:
             full_rsp = Response(json.dumps(rsp_data), status=rsp_status, content_type="application/json")
@@ -324,77 +236,191 @@ def user_email(email):
 
     return full_rsp
 
+@application.route("/api/customers/<profile_id>/profile", methods=["GET"])
+@login_required
+def customer_profile(profile_id):
+    global _profile_service
+    global _user_service
 
+    inputs = log_and_extract_input(demo, { "parameters": profile_id })
+    logger.error("/profile: input = " + str(inputs))
+    rsp_data = None
+    rsp_status = None
+    rsp_txt = None
 
-@application.route("/address/<addr_id>", methods=["GET"])
-def get_address(addr_id):
-    """
-    "GET": given addr_id, get detailed address information
-    :return:
-    """
     try:
-        global _address_service
-        _address_service = _get_address_service()
-        rsp_data = None
-        rsp_status = None
-        rsp_txt = None
-        if request.method == "GET":
-            rsp_data = _address_service.get_address(addr_id)
-            rsp_status = 500
-            if rsp_data is not None:
+        profile_service = _get_profile_service()
+
+        logger.error("/profile: _profile_service = " + str(profile_service))
+
+        if inputs["method"] == "GET":
+            query_params = json.dumps(inputs["query_params"])
+
+            full_rsp = profile_service.get_user_profile(profile_id)
+
+            if full_rsp is not None:
+                rsp_data = full_rsp
                 rsp_status = 200
+                rsp_txt = "OK"
+            else:
+                rsp_data = None
+                rsp_status = 404
+                rsp_txt = "NOT FOUND"
+
+        if rsp_data is not None:
             full_rsp = Response(json.dumps(rsp_data), status=rsp_status, content_type="application/json")
         else:
-            rsp_status = 500
-            rsp_txt = "Wrong HTTP request when getting address"
             full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
-    except Exception:
+
+    except Exception as e:
+        log_msg = "/profile: Exception = " + str(e)
+        logger.error(log_msg)
         rsp_status = 500
-        rsp_txt = "INTERNAL SERVER ERROR when processing address"
+        rsp_txt = "INTERNAL SERVER ERROR. Customer profile cannot be processed."
         full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
+
+    log_response("/profile", rsp_status, rsp_data, rsp_txt)
+
     return full_rsp
 
 
-@application.route("/address", methods=["POST", "PUT"])
-def process_address():
-    """
-        "POST": create a new address entry
-        "PUT": update an address entry
-        :return:
-        """
+
+@application.route("/api/profile", methods=["GET","POST"])
+@login_required
+def user_profile_entry():
+    global _profile_service
+    global _user_service
+
+    inputs = log_and_extract_input(demo)
+    logger.error("/profile: input = " + str(inputs))
+    rsp_data = None
+    rsp_status = None
+    rsp_txt = None
+
     try:
-        global _address_service
-        _address_service = _get_address_service()
-        rsp_data = None
-        rsp_status = None
-        rsp_txt = None
-        if request.method == "POST":
-            inputs = log_and_extract_input(process_address)
-            new_addr = inputs["body"]
-            rsp_data = _address_service.create_address(new_addr)
-            rsp_status = 500
-            if rsp_data is not None:
-                rsp_status = 200
-            full_rsp = Response(rsp_data, status=rsp_status, content_type="text/plain")
-        elif request.method == "PUT":
-            inputs = log_and_extract_input(process_address)
-            addr_info = inputs["body"]
-            previous_addr_id = addr_info["addr_id"]
-            del addr_info["addr_id"]
-            rsp_data = _address_service.update_address(previous_addr_id, addr_info)
-            rsp_status = 500
-            if rsp_data is not None:
-                rsp_status = 200
-            full_rsp = Response(rsp_data, status=rsp_status, content_type="text/plain")
+        profile_service = _get_profile_service()
+
+        logger.error("/profile: _profile_service = " + str(profile_service))
+        query_params = inputs["query_params"]
+        logger.error("/profile: query = " + str(query_params))
+        #logger.error("/profile: query = " + str(json.dumps(inputs["body"])))
+        for (key, val) in query_params.items():
+            query_key = key
+            query_val = val
+
+        if inputs["method"] == "GET":
+            full_rsp = profile_service.get_user_profile(query_val)
+
+            if full_rsp is not None:
+                rsp_data = full_rsp
+                rsp_status = 201
+                rsp_txt = "Profile retrieved."
+            else:
+                rsp_data = None
+                rsp_status = 404
+                rsp_txt = "Cannot get profile."
+
+        if inputs["method"] == "POST":
+            full_rsp = profile_service.create_profile_entry(query_val, inputs["body"])
+
+            if full_rsp is not None:
+                rsp_data = full_rsp
+                rsp_status = 201
+                rsp_txt = "Profile" + rsp_data + " created."
+                link = rsp_data[0]
+                auth = rsp_data[1]
+                user_id = rsp_data[2]
+            else:
+                rsp_data = None
+                rsp_status = 404
+                rsp_txt = "Cannot create profile."
+
+        if rsp_data is not None:
+            full_rsp = Response(json.dumps(rsp_data), status=rsp_status, content_type="application/json")
         else:
-            rsp_status = 500
-            rsp_txt = "Wrong HTTP request when processing address"
             full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
-    except Exception:
+
+    except Exception as e:
+        log_msg = "/profile: Exception = " + str(e)
+        logger.error(log_msg)
         rsp_status = 500
-        rsp_txt = "INTERNAL SERVER ERROR when processing address"
+        rsp_txt = "INTERNAL SERVER ERROR. Customer profile creation cannot be processed."
         full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
+
+    log_response("/profile", rsp_status, rsp_data, rsp_txt)
+
     return full_rsp
+
+@application.route("/api/profile/<profile_id>", methods=["GET", "PUT", "DELETE"])
+@login_required
+def user_profile(profile_id):
+    global _profile_service
+    global _user_service
+
+    inputs = log_and_extract_input(demo, { "parameters": profile_id })
+    logger.error("/profile: input = " + str(inputs))
+    rsp_data = None
+    rsp_status = None
+    rsp_txt = None
+
+    try:
+        profile_service = _get_profile_service()
+
+        logger.error("/profile: _profile_service = " + str(profile_service))
+
+        if inputs["method"] == "GET":
+            query_params = json.dumps(inputs["query_params"])
+
+            full_rsp = profile_service.get_profile(profile_id)
+
+            if full_rsp is not None:
+                rsp_data = full_rsp
+                rsp_status = 200
+                rsp_txt = "OK"
+            else:
+                rsp_data = None
+                rsp_status = 404
+                rsp_txt = "NOT FOUND"
+
+
+        elif inputs["method"] == "PUT":
+            rsp_id = profile_service.update_profile(profile_id, inputs["body"])
+            if rsp_id is not None:
+                rsp_status = 200
+                rsp_txt = "id = " + rsp_id + " profile updated."
+            else:
+                rsp_data = None
+                rsp_status = 404
+                rsp_txt = "can not update"
+
+        elif request.method == 'DELETE':
+            rsp_id = profile_service.delete_profile(profile_id)
+            if rsp_id is not None:
+                rsp_status = 200
+                rsp_txt = "id = " + rsp_id + " user deleted."
+                rsp_data = rsp_id
+            else:
+                rsp_data = None
+                rsp_status = 404
+                rsp_txt = "NOT FOUND"
+
+        if rsp_data is not None:
+            full_rsp = Response(json.dumps(rsp_data), status=rsp_status, content_type="application/json")
+        else:
+            full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
+
+    except Exception as e:
+        log_msg = "/profile: Exception = " + str(e)
+        logger.error(log_msg)
+        rsp_status = 500
+        rsp_txt = "INTERNAL SERVER ERROR. Customer profile cannot be processed."
+        full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
+
+    log_response("/profile", rsp_status, rsp_data, rsp_txt)
+
+    return full_rsp
+
+
 
 logger.debug("__name__ = " + str(__name__))
 # run the app.
@@ -408,3 +434,4 @@ if __name__ == "__main__":
 
     application.debug = True
     application.run()
+
