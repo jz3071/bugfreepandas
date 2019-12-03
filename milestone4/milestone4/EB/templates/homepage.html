@@ -1,0 +1,56 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello World</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+</head>
+<body id="mainBody">
+	Welcome, {{ first_name }} {{ last_name }} !
+
+    <br><br>
+    Input the User Email you want to search:<br>
+    <form id="searchForm" name="search" onsubmit="searchUser(event)">
+      <input type="text" name="email" id="search_e" placeholder="email address"><br>
+      <button type="submit">search</button>
+    </form>
+
+
+
+</body>
+{% block javascript %}
+    <script>
+        var fixed_url = "http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com";
+        var token = '{{ token }}';
+        sessionStorage.setItem('token', token);
+        console.log(sessionStorage.getItem('token'));
+        let usr_first_name = '{{ first_name }}';
+        let usr_last_name = '{{ last_name }}';
+
+        function searchUser(e) {
+            e.preventDefault();
+            var x = document.getElementById("search_e").value;
+            {#var email = #}
+            {#document.search.action="localhost:5000/api/user/" + x;#}
+            {#search.submit();#}
+            $.ajax({
+                type: "GET",
+                url: fixed_url + "/api/user/" + x,
+                data: {
+                    "usr_first_name":usr_first_name,
+                    "usr_last_name":usr_last_name,
+                    "search_email":x,
+                    "token":sessionStorage.getItem('token')
+                },
+                dataType: "html",
+                success: function (response) {
+                    {#console.log(response);#}
+                    $('#mainBody').html(response);
+                },
+                error: function (xhr, status, error) {
+                    alert("No User");
+                }
+             });
+         }
+    </script>
+{% endblock %}
+</html>
