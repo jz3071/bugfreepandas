@@ -393,7 +393,7 @@ def user_email(email):
                 rsp_txt = "OK"
 
                 if "links" not in rsp:
-                rsp["links"] = []
+                    rsp["links"] = []
 
                 link_to_profile = linked_data_assembler(rsp["id"])
 
