@@ -1,7 +1,6 @@
 import DataAccess.DataAdaptor as data_adaptor
 from abc import ABC, abstractmethod
 import pymysql.err
-import Middleware.security as middleware_security
 
 class DataException(Exception):
 
