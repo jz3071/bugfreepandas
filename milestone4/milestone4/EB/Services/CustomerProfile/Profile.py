@@ -1,4 +1,4 @@
-from DataAccess.DataObject import ProfileEntriesRDB as ProfileEntriesRDB
+from DataAccess.ProfileDataObject import ProfileEntriesRDB as ProfileEntriesRDB
 from Context.Context import Context
 from uuid import uuid4
 
