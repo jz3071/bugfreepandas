@@ -395,9 +395,9 @@ def user_email(email):
                 if "links" not in rsp:
                     rsp["links"] = []
 
-                link_to_profile = linked_data_assembler(rsp["id"])
+                    link_to_profile = linked_data_assembler(rsp["id"])
 
-                rsp["links"].append(link_to_profile)
+                    rsp["links"].append(link_to_profile)
 
 
 
@@ -587,6 +587,28 @@ def login():
     return full_rsp
 
 
+def get_address(profile_service, query, payload):
+    add_url = Context.get_default_context().get_context("addsvc_url") + "/addresses"
+
+    logger.error("/address check: context = " + add_url)
+
+    address_id = None
+    address_entry = profile_service.retrieve_address(query, payload)
+
+    if address_entry is not None:
+        r_address = requests.post(add_url, json=address_entry)
+
+        logger.error("/address check: address service response = " + str(r_address.status_code) + " " + str(r_address.json()))
+        if r_address.status_code == 200:
+
+            address_id = r_address.json()['deliver_point_barcode']
+            logger.error("/address check: address service response = Successfully retrieved valid address id " + address_id)
+        else:
+            logger.error("/address check: address service response = Invalid address")
+            address_id = "Invalid"
+
+    return address_id
+
 
 @application.route("/api/customers/<profile_id>/profile", methods=["GET"])
 @login_required
@@ -672,7 +694,12 @@ def user_profile_entry():
                 rsp_txt = "Cannot get profile."
 
         if inputs["method"] == "POST":
-            full_rsp = profile_service.create_profile_entry(query_val, inputs["body"])
+            full_rsp = None
+
+            address_id = get_addresses(profile_service, query_val, inputs["body"])
+
+            if address_id is not "Invalid":
+                full_rsp = profile_service.create_profile_entry(query_val, inputs["body"], address_id)
 
             if full_rsp is not None:
                 rsp_data = full_rsp
@@ -695,7 +722,7 @@ def user_profile_entry():
         log_msg = "/profile: Exception = " + str(e)
         logger.error(log_msg)
         rsp_status = 500
-        rsp_txt = "INTERNAL SERVER ERROR. Customer profile creation cannot be processed."
+        rsp_txt = "ERROR: Customer profile creation fails. "
         full_rsp = Response(rsp_txt, status=rsp_status, content_type="text/plain")
 
     log_response("/profile", rsp_status, rsp_data, rsp_txt)
@@ -735,7 +762,13 @@ def user_profile(profile_id):
 
 
         elif inputs["method"] == "PUT":
-            rsp_id = profile_service.update_profile(profile_id, inputs["body"])
+            
+            address_id = get_addresses(profile_service, profile_id, inputs["body"])
+            rsp_id = None
+
+            if address_id is not "Invalid":
+                rsp_id = profile_service.update_profile(profile_id, inputs["body"], address_id)
+
             if rsp_id is not None:
                 rsp_status = 200
                 rsp_txt = "id = " + rsp_id + " profile updated."
