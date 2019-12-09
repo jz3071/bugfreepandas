@@ -26,21 +26,21 @@ class RegisterLoginSvc():
             cls.set_context(Context.get_default_context())
         return cls._context
 
-
     @classmethod
     def register(cls, data):
-
         hashed_pw = security.hash_password({"password" : data['password']})
         data["password"] = hashed_pw
         try:
             result = user_svc.create_user(data)
+            logger.debug("CREATE RESULT: " + str(result))
             s_info = user_svc.get_by_email(data['email'])
+            logger.debug("CREATE S_INFO: " + str(s_info))
             tok = security.generate_token(s_info)
+            logger.debug("CREATE TOK: " + str(tok))
             return tok, s_info
-        except:
+        except Exception as e:
+            logger.error("CREATE ERROR: " + str(e))
             return None
-
-
 
     @classmethod
     def login(cls, login_info):

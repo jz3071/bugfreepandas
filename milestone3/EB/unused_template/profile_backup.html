@@ -1,0 +1,116 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+</head>
+<body id="mainBody">
+    Hello {{ usr_first_name }} {{ usr_last_name }}!
+    <br><br>
+{#    <button type="submit" onclick="deleteUser()">Home</button>#}
+    <br><br>
+    This is the information you want to search:
+    <br><br>
+    First name: {{ search_first_name }}
+    <br><br>
+    Last name: {{ search_last_name }}
+    <br><br>
+    Email: {{ search_email }}
+    <br><br>
+    id: {{ search_id }}
+    <br><br>
+    <button type="submit" onclick="deleteUser()">delete</button>
+    <br><br>
+    Update profile:
+    <br><br>
+    <form id="updateForm" name="update" onsubmit="updateUser(event);">
+        <input type="text" name="new_email" id="new_e" placeholder="new email"><br>
+        <input type="text" name="new_first_name" id="new_f" placeholder="new first name"><br>
+        <input type="text" name="new_last_name" id="new_l" placeholder="new last name"><br>
+        <input type="password" name="new_password" id="new_p" placeholder="new password"><br>
+      <button type="submit">update</button>
+    </form>
+</body>
+{% block javascript %}
+    <script>
+        var token = '{{ token }}';
+        sessionStorage.setItem('token', token);
+        console.log(sessionStorage.getItem('token'));
+        {#var xhr = new XMLHttpRequest()#}
+        {#xhr.setRequestHeader('token', sessionStorage.getItem('token'));#}
+
+        function updateUser(e) {
+            e.preventDefault();
+            let target_usr = '{{ search_email }}';
+            let new_email = document.getElementById("new_e").value;
+            let new_first_name = document.getElementById("new_f").value;
+            let new_last_name = document.getElementById("new_l").value;
+            let new_password = document.getElementById("new_p").value;
+            {#var email = #}
+            {#document.search.action="http://127.0.0.1:5000/api/user/" + x;#}
+            {#search.submit();#}
+            $.ajax({
+                type: "PUT",
+                url: "http://127.0.0.1:5000/api/user/" + target_usr,
+                data: {
+                    "new_email":new_email,
+                    "new_first_name":new_first_name,
+                    "new_last_name":new_last_name,
+                    "new_password":new_password,
+                    "token":sessionStorage.getItem('token')
+                },
+                dataType: "html",
+                success: function (response) {
+                    console.log(response);
+                    $('#mainBody').html(response);
+                },
+                error: function (xhr, status, error) {
+                    alert("Cannot update");
+                }
+             });
+         }
+
+        function deleteUser() {
+            let target_usr = '{{ search_email }}';
+             $.ajax({
+                type: "DELETE",
+                url: "http://127.0.0.1:5000/api/user/" + target_usr,
+                data: {
+                    "token":sessionStorage.getItem('token')
+                },
+                dataType: "html",
+                success: function (response) {
+                    console.log(response);
+                    alert(response);
+                },
+                error: function (xhr, status, error) {
+                    alert("Cannot delete");
+                }
+             });
+        }
+
+         function back() {
+            let usr_first_name = '{{ usr_first_name }}';
+            let usr_last_name = '{{ usr_last_name }}';
+            console.log("$$$");
+            console.log(sessionStorage.getItem('token'));
+             $.ajax({
+                type: "GET",
+                url: "http://127.0.0.1:5000/home",
+                data: {
+                    "usr_first_name":usr_first_name,
+                    "usr_last_name":usr_last_name,
+                    "token":sessionStorage.getItem('token')
+                },
+                dataType: "html",
+                success: function (response) {
+                    console.log(response);
+                    $('#mainBody').html(response);
+                },
+                error: function (xhr, status, error) {
+                    alert("Error");
+                }
+             });
+          }
+    </script>
+{% endblock %}
+</html>

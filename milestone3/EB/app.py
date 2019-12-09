@@ -27,17 +27,28 @@ import Middleware.notification as notification_middleware
 import Middleware.security as security_middleware
 
 
-
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        print("\nDecorator was called!!!!. Request = ", request)
-        return f(*args, **kwargs)
+        print(request.url)
+        print(request.path)
+        inputs = log_and_extract_input(demo, {"parameters": None})
+        arg = inputs["query_params"]
+        form = inputs["form"]
+        body = inputs["body"]
+        if arg and arg.get("token") or form and form.get("token") or body and body.get("token"):
+            return f(*args, **kwargs)
+        else:
+            return redirect("/login", code=302)
+        # print("\nDecorator was called!!!!. Request = ", request)
+        # return f(*args, **kwargs)
     return decorated_function
+
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
+
 
 ###################################################################################################################
 #
@@ -47,6 +58,7 @@ logger.setLevel(logging.DEBUG)
 # print a nice greeting.
 def say_hello(username = "World"):
     return '<p>Hello %s!</p>\n' % username
+
 
 # AWS put this here.
 # some bits of text for the page.
@@ -73,19 +85,19 @@ application.wsgi_app = SimpleM(application.wsgi_app)
 @application.before_request
 def before_decorator():
     print(".... In before decorator ...")
-    path = request.path
-    no_need_login_path = ["/favicon.ico", "/login", "/api/login", "/api/registration", "/health"]
-    if path not in no_need_login_path:
-        print(request.url)
-        print(request.path)
-        inputs = log_and_extract_input(demo, {"parameters": None})
-        arg = inputs["query_params"]
-        form = inputs["form"]
-        body = inputs["body"]
-        if arg and arg.get("token") or form and form.get("token") or body and body.get("token"):
-            pass
-        else:
-            return redirect("/login", code=302)
+    # path = request.path
+    # no_need_login_path = ["/favicon.ico", "/login", "/api/login", "/api/registration", "/health", "/test"]
+    # if path not in no_need_login_path:
+    #     print(request.url)
+    #     print(request.path)
+    #     inputs = log_and_extract_input(demo, {"parameters": None})
+    #     arg = inputs["query_params"]
+    #     form = inputs["form"]
+    #     body = inputs["body"]
+    #     if arg and arg.get("token") or form and form.get("token") or body and body.get("token"):
+    #         pass
+    #     else:
+    #         return redirect("/login", code=302)
 
 
 @application.after_request
@@ -95,8 +107,10 @@ def after_decorator(rsp):
 
 
 # add a rule for the index page. (Put here by AWS in the sample)
-application.add_url_rule('/', 'index', (lambda: header_text +
-    say_hello() + instructions + footer_text))
+@application.route("/", methods=["GET"])
+@login_required
+def init_page():
+    return header_text + say_hello() + instructions + footer_text
 
 
 # add a rule when the page is accessed with a name appended to the site
@@ -225,6 +239,7 @@ def health_check():
 
 
 @application.route("/home", methods=["GET"])
+@login_required
 def home():
 
     inputs = log_and_extract_input(demo, {"parameters": None})
@@ -268,6 +283,7 @@ def home():
 
 
 @application.route("/demo/<parameter>", methods=["GET", "POST"])
+@login_required
 def demo(parameter):
 
     inputs = log_and_extract_input(demo, { "parameter": parameter })
@@ -281,6 +297,7 @@ def demo(parameter):
 
 
 @application.route("/api/user/<email>", methods=["GET", "PUT", "DELETE"])
+@login_required
 def user_email(email):
 
     global _user_service
@@ -557,9 +574,7 @@ def test_middleware(parameter):
 
     # Other middleware goes here ...
 
-
     # Now do the application functions.
-
 
     # And now do the functions for post processing the request.
     logger.debug("/api/user/<email>" + json.dumps(request, default=str))
@@ -574,6 +589,16 @@ def test_middleware(parameter):
 @application.route("/login", methods=["GET"])
 def show_login():
     return render_template("login_register.html")
+
+
+@application.route("/test", methods=["PUT"])
+def test():
+    print(request.files)
+    inputs = log_and_extract_input(demo, {"parameters": None})
+    print(inputs)
+
+    return {"YY":"TT"}
+
 
 def do_something_before():
     print("\n")
@@ -597,11 +622,10 @@ if __name__ == "__main__":
     # Setting debug to True enables debug output. This line should be
     # removed before deploying a production app.
 
-
     logger.debug("Starting Project EB at time: " + str(datetime.now()))
     init()
 
     application.debug = True
     application.before_request(do_something_before)
     application.after_request(do_something_after)
-    application.run(port=5033)
+    application.run(port=5011)
