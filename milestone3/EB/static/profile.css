@@ -1,0 +1,17 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:300);
+#container1{
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #76b852;
+}
+
+#text{
+    color: white;
+}
+
+#textstyle{
+    color: white;
+}

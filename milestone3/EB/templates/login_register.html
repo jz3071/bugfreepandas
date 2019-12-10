@@ -11,6 +11,8 @@
   <div class="form">
     <form class="register-form" action="http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com/api/registration"
           method="POST" id="registrationForm">
+{#    <form class="register-form" action="http://127.0.0.1:5000/api/registration"#}
+{#          method="POST" id="registrationForm">#}
       <input id="firstName" type="text" name="first_name" placeholder="first name"/>
       <input id="lastName" type="text" name="last_name" placeholder="last name"/>
       <input id="password" type="password" name="password" placeholder="password"/>
@@ -26,6 +28,8 @@
     </form> -->
     <form class="login-form" action="http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com/api/login"
           method="POST" id="loginForm">
+{#    <form class="login-form" action="http://127.0.0.1:5000/api/login"#}
+{#          method="POST" id="loginForm">#}
       <input type="text" name="email" id="e" placeholder="Email">
       <input type="password" name="password" id="p" placeholder="password">
       <button value="Submit" type="submit">login</button>

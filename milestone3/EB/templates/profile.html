@@ -2,37 +2,44 @@
 <head>
     <meta charset="UTF-8">
     <title>Profile</title>
+    <link rel="stylesheet" href="../static/profile.css">
 </head>
 <body id="mainBody">
-    Hello {{ usr_first_name }} {{ usr_last_name }}!
+<div id="container1">
+<div id="greeting">
+    <h2 id="text">Hello {{ usr_first_name }} {{ usr_last_name }}!</h2>
+</div>
+<div id="form">
     <br><br>
     <button type="submit" onclick="goHome()">Home</button>
     <br><br>
-    This is the information you want to search:
+    <text id="textstyle">This is the information you want to search:</text>
     <br><br>
-    First name: {{ search_first_name }}
+    <text id="textstyle">First name: {{ search_first_name }}</text>
     <br><br>
-    Last name: {{ search_last_name }}
+    <text id="textstyle">Last name: {{ search_last_name }}</text>
     <br><br>
-    Email: {{ search_email }}
+    <text id="textstyle">Email: {{ search_email }}</text>
     <br><br>
-    id: {{ search_id }}
+    <text id="textstyle">id: {{ search_id }}</text>
     <br><br>
     <button type="submit" onclick="deleteUser()">delete</button>
     <br><br>
-    Update profile:
+    <text id="textstyle">Update profile:</text>
     <br><br>
     <form id="updateForm" name="update" onsubmit="updateUser(event);">
-        <input type="text" name="new_email" id="new_e" placeholder="new email"><br>
+        <input id="input1" type="text" name="new_email" id="new_e" placeholder="new email"><br>
         <input type="text" name="new_first_name" id="new_f" placeholder="new first name"><br>
         <input type="text" name="new_last_name" id="new_l" placeholder="new last name"><br>
         <input type="password" name="new_password" id="new_p" placeholder="new password"><br>
       <button type="submit">update</button>
     </form>
+</div>
+</div>
 </body>
-{% block javascript %}
     <script>
         var fixed_url = "http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com";
+        {#var fixed_url = "http://127.0.0.1:5000";#}
         var token = '{{ token }}';
         var Etag = '{{ ETag }}';
         sessionStorage.setItem('token', token);
@@ -115,5 +122,4 @@
              });
           }
     </script>
-{% endblock %}
 </html>

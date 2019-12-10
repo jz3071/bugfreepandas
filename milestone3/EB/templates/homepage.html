@@ -3,23 +3,29 @@
     <meta charset="UTF-8">
     <title>Hello World</title>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <link rel="stylesheet" href="../static/homepage.css">
 </head>
 <body id="mainBody">
-	Welcome, {{ first_name }} {{ last_name }} !
-
+<div id="container">
+<div id="greeting">
+    <h2 id="greetingtext">Welcome, {{ first_name }} {{ last_name }} !</h2>
+</div>
+<div id="form1">
     <br><br>
-    Input the User Email you want to search:<br>
+    <h3 id="text1">Input the user email you want to search:<h3><br>
     <form id="searchForm" name="search" onsubmit="searchUser(event)">
       <input type="text" name="email" id="search_e" placeholder="email address"><br>
       <button type="submit">search</button>
     </form>
+</div>
+</div>>
 
 
 
 </body>
-{% block javascript %}
     <script>
         var fixed_url = "http://seeb-env.twuqj3ymuy.us-east-1.elasticbeanstalk.com";
+        {#var fixed_url = "http://127.0.0.1:5000";#}
         var token = '{{ token }}';
         sessionStorage.setItem('token', token);
         console.log(sessionStorage.getItem('token'));
@@ -52,5 +58,4 @@
              });
          }
     </script>
-{% endblock %}
 </html>
