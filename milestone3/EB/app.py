@@ -26,6 +26,9 @@ from flask import g, request, redirect, url_for, render_template, make_response
 import Middleware.notification as notification_middleware
 import Middleware.security as security_middleware
 
+###
+from DataAccess import DataAdaptor
+###
 
 def login_required(f):
     @wraps(f)
@@ -611,6 +614,55 @@ def do_something_after(rsp):
     print("***************** Do something AFTER got ... **************", request)
     print("\n")
     return rsp
+
+
+
+@application.route("/resource", methods=["GET"], defaults={"primary_key_value":None})
+@application.route("/resource/<primary_key_value>", methods=["GET"])
+def resource_by_template(primary_key_value=None):
+    try:
+        inputs = log_and_extract_input()
+        template = {"email":primary_key_value} if primary_key_value else inputs.get("query_params", {})
+        fields = inputs.get("query_params", {})
+        fields.pop('f', None)
+
+        if fields:
+            fields = fields.split(',')
+
+        if request.method == "GET":
+            sql, args = DataAdaptor.create_select(table_name="users", template=template, fields=fields)
+            res, data = DataAdaptor.run_q(sql, args)
+            if res and len(data) > 0:
+                result = json.dumps(data, default=str)
+                rsp_data = result
+                rsp_status = 200
+                rsp_txt = str(rsp_data)
+
+                full_rsp = Response(rsp_txt, status=rsp_status, content_type="application/json")
+                full_rsp.headers["Access-Control-Allow-Origin"] = "*"
+
+                return full_rsp
+            else:
+                rsp_status = 404
+                rsp_txt = "Not Found"
+                full_rsp = Response(rsp_txt, status=rsp_status, content_type="application/json")
+                full_rsp.headers["Access-Control-Allow-Origin"] = "*"
+                return full_rsp
+
+    except Exception as e:
+        print(e)
+        rsp_text = "Internal Error"
+        rsp_status = 504
+        full_rsp = Response(rsp_txt, status=rsp_status, content_type="application/json")
+        full_rsp.headers["Access-Control-Allow-Origin"] = "*"
+
+        return full_rsp
+
+
+#########
+
+
+
 
 
 
