@@ -621,13 +621,19 @@ def do_something_after(rsp):
 @application.route("/resource/<primary_key_value>", methods=["GET"])
 def resource_by_template(primary_key_value=None):
     try:
-        inputs = log_and_extract_input()
+        inputs = log_and_extract_input(demo)
         template = {"email":primary_key_value} if primary_key_value else inputs.get("query_params", {})
-        fields = inputs.get("query_params", {})
-        fields.pop('f', None)
+
+        if "f" in template:
+            fields = template["f"]
+            template.pop("f")
+        else:
+            fields = None
 
         if fields:
             fields = fields.split(',')
+        else:
+            fields = ["*"]
 
         if request.method == "GET":
             sql, args = DataAdaptor.create_select(table_name="users", template=template, fields=fields)
@@ -651,7 +657,7 @@ def resource_by_template(primary_key_value=None):
 
     except Exception as e:
         print(e)
-        rsp_text = "Internal Error"
+        rsp_txt = "Internal Error"
         rsp_status = 504
         full_rsp = Response(rsp_txt, status=rsp_status, content_type="application/json")
         full_rsp.headers["Access-Control-Allow-Origin"] = "*"
